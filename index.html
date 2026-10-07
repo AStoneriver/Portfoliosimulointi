@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vakuutusportfolion strategiasimulaattori – Demo 1</title>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#d9e1ec;
+  --nav:#17365d;--blue:#4472c4;--green:#2f855a;--red:#c53030;--amber:#b7791f;
+}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--nav);color:white;padding:18px 26px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+header h1{font-size:21px;margin:0} header .sub{opacity:.82;font-size:13px}
+nav{display:flex;gap:8px;flex-wrap:wrap;background:white;border-bottom:1px solid var(--line);padding:10px 18px;position:sticky;top:0;z-index:10}
+nav button{border:0;background:#eef3f8;color:#17365d;padding:9px 12px;border-radius:9px;font-weight:700;cursor:pointer}
+nav button.active{background:var(--blue);color:white}
+main{padding:18px;max-width:1500px;margin:auto}.page{display:none}.page.active{display:block}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(23,54,93,.04)}.table-scroll{overflow:auto;max-height:560px;border-radius:10px}.table-scroll table{min-width:1050px}.table-scroll th{white-space:normal;line-height:1.2}.table-scroll td{white-space:nowrap}
+.kpi .v{font-size:26px;font-weight:800;margin-top:7px}.kpi .s{font-size:12px;color:var(--muted)}
+h2{margin:4px 0 14px;font-size:22px} h3{margin:0 0 10px;font-size:16px}
+.small{font-size:12px;color:var(--muted)} .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf2f7;font-size:12px;font-weight:700}.header-badge{display:inline-block;padding:7px 12px;border-radius:999px;background:#ffffff;color:#17365d;font-size:12px;font-weight:800;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:9px 8px;border-bottom:1px solid #e8edf3;text-align:right} th:first-child,td:first-child{text-align:left}
+th{background:#f6f8fb;color:#475467;position:static}
+input,select{width:100%;padding:7px 8px;border:1px solid #cfd8e3;border-radius:8px;background:white}
+input[type=checkbox]{width:auto}.btn{border:0;background:var(--blue);color:white;padding:9px 13px;border-radius:9px;font-weight:700;cursor:pointer}.btn.secondary{background:#e8eef6;color:#17365d}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.strategy-card{border-top:5px solid var(--blue)} .strategy-card.best{border-top-color:var(--green);box-shadow:0 0 0 2px rgba(47,133,90,.12)}
+canvas{width:100%;height:330px;background:white;border-radius:10px}
+.note{padding:12px;border-radius:10px;background:#eef6ff;border-left:4px solid var(--blue);font-size:13px}
+.warn{background:#fff7e6;border-left-color:var(--amber)}
+.bad{color:var(--red);font-weight:700}.good{color:var(--green);font-weight:700}
+.flex{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.matrix{display:grid;grid-template-columns:170px repeat(5,1fr);gap:6px}.matrix div{padding:10px;border:1px solid var(--line);background:white;border-radius:8px;font-size:12px}.matrix .head{font-weight:800;background:#eef3f8}.matrix .cell{cursor:pointer}.matrix .cell:hover{outline:2px solid #9bb8e7}
+.flow{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:16px;align-items:center}.flow .box{padding:14px;border:1px solid var(--line);border-radius:12px;background:white}.flow .mid{background:#f8fafc}
+.badge{font-size:11px;font-weight:800;padding:3px 6px;border-radius:6px;background:#eef3f8}
+@media(max-width:1000px){.g4,.g3,.g2{grid-template-columns:1fr}.matrix{grid-template-columns:150px repeat(2,1fr)}.flow{grid-template-columns:1fr}}
+
+.role-tag{display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;vertical-align:middle}
+.input-role{background:#eaf7ee;color:#276749}
+.output-role{background:#edf2ff;color:#3656a7}
+.explain-role{background:#fff4e5;color:#9a6700}
+.guide-btn{position:fixed;right:18px;top:92px;z-index:30;border:0;background:#2f855a;color:white;padding:11px 15px;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(47,133,90,.28)}
+.guide-btn:hover{background:#276749}
+.guide-overlay{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:100;display:none;justify-content:flex-end}
+.guide-overlay.open{display:flex}
+.guide-panel{height:100%;width:min(720px,92vw);background:white;overflow:auto;padding:22px;box-shadow:-10px 0 30px rgba(15,23,42,.18)}
+.guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #e6ebf1;padding-bottom:14px;margin-bottom:18px}
+.guide-close{border:0;background:#edf2f7;color:#17365d;width:36px;height:36px;border-radius:9px;font-size:25px;line-height:1;cursor:pointer}
+.guide-section{margin:0 0 24px}.guide-section h3{color:#17365d;margin-bottom:10px}.guide-section li{margin-bottom:8px;line-height:1.45}
+.guide-section table td{text-align:left;vertical-align:top;white-space:normal}
+.calc-flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:8px;align-items:stretch}
+.calc-box{border:1px solid #d9e1ec;background:#f8fafc;padding:12px;border-radius:10px;font-size:12px;line-height:1.45}
+.calc-arrow{display:flex;align-items:center;font-size:22px;color:#4472c4;font-weight:800}
+@media(max-width:850px){.calc-flow{grid-template-columns:1fr}.calc-arrow{transform:rotate(90deg);justify-content:center}.guide-btn{top:auto;bottom:18px}}
+
+
+.portfolio-input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.portfolio-input-grid label{display:block;font-size:12px;color:#667085;font-weight:700;margin-bottom:5px}
+.portfolio-input-grid input{background:#fffdf3}
+#portfolioTable tr.selectable{cursor:pointer}
+#portfolioTable tr.selectable:hover{background:#f4f8fd}
+#portfolioTable tr.selected-row{background:#eaf2ff;font-weight:700}
+@media(max-width:1000px){.portfolio-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.portfolio-input-grid{grid-template-columns:1fr}}
+
+
+.action-group{margin-bottom:18px;border:1px solid #d9e1ec;border-radius:12px;overflow:hidden;background:#fff}
+.action-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#f7f9fc;border-bottom:1px solid #d9e1ec}
+.action-group-head h3{margin:0}
+.strategy-badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+.strategy-badge.kasvu{background:#e8f5e9;color:#2f855a}
+.strategy-badge.kannattavuus{background:#fff0f0;color:#c53030}
+.strategy-badge.tasapaino{background:#eef3ff;color:#3656a7}
+.actions-group-table{min-width:1250px}
+.actions-group-table td:first-child,.actions-group-table th:first-child{text-align:center}
+
+
+
+
+
+.hero-card{background:linear-gradient(135deg,#f8fbff 0%,#eef5ff 100%)}
+.hero-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:18px;align-items:stretch}
+.hero-side{display:flex}
+.hero-side-box{border:1px solid #d9e1ec;background:white;border-radius:12px;padding:16px;width:100%}
+.info-step{position:relative;padding-top:48px}
+.step-num{position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:999px;background:#4472c4;color:white;font-weight:800;display:flex;align-items:center;justify-content:center}
+.quick-guide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.quick-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid #d9e1ec;border-radius:10px;background:#fbfcfe}
+.quick-item span{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:999px;background:#17365d;color:white;font-weight:800;font-size:12px}
+.quick-item small{color:#667085;line-height:1.45}
+@media(max-width:1000px){.hero-grid,.quick-guide{grid-template-columns:1fr}}
+
+
+.portfolio-context{
+  background:#f6c453 !important;
+  color:#17365d !important;
+  border:2px solid #e0a92f;
+  box-shadow:0 0 0 3px rgba(246,196,83,.18);
+  font-size:13px;
+}
+.portfolio-focus-card{
+  border:2px solid #f0b429;
+  background:#fffaf0;
+  box-shadow:0 0 0 3px rgba(240,180,41,.10);
+}
+.portfolio-focus-label{
+  display:inline-block;
+  margin-bottom:8px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#f6c453;
+  color:#17365d;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.portfolio-reminder{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:12px;
+  border:2px solid #f0b429;
+  background:#fff8e5;
+}
+.portfolio-reminder-title{
+  font-size:12px;
+  font-weight:800;
+  color:#8a5b00;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.portfolio-reminder-value{
+  font-size:22px;
+  font-weight:900;
+  color:#17365d;
+  margin:3px 0 4px;
+}
+.context-strip{
+  margin-bottom:12px;
+  padding:8px 12px;
+  border-radius:10px;
+  background:#fff8e5;
+  border:1px solid #f0b429;
+  color:#694b00;
+  font-size:12px;
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Vakuutusportfolion strategiasimulaattori</h1><div class="sub">Demo 1 · 10 vuoden ennakoiva päätöksenteko · 2027–2036</div></div>
+  <div id="headerPortfolioBadge" class="header-badge portfolio-context">Simuloitava: Yritys × Ajoneuvot</div>
+</header>
+<nav id="nav">
+  <button data-page="intro" class="active">1. Aloitus</button>
+  <button data-page="portfolio">2. Portfolio</button>
+  <button data-page="actions">3. Toimenpiteet</button>
+  <button data-page="strategies">4. Strategiat</button>
+  <button data-page="simulation">5. 10v simulointi</button>
+  <button data-page="logic">6. Vaikutuslogiikka</button>
+  <button data-page="overview">7. Yhteenveto</button>
+</nav>
+<main>
+<section id="intro" class="page active">
+  <div class="card hero-card">
+    <div class="hero-grid">
+      <div>
+        <div class="pill">Tervetuloa demoan</div>
+        <h2 style="margin-top:10px">Vakuutusportfolion strategiasimulaattori</h2>
+        <p class="small" style="font-size:14px;line-height:1.6;color:#475467">
+          Tällä ohjelmalla arvioidaan, miten erilaiset toimenpiteet ja strategiat vaikuttavat vakuutusportfolion
+          <b>maksutuloon, tulokseen ja asiakaskokemukseen</b> seuraavan 10 vuoden aikana.
+          Ohjelma auttaa tekemään näkyväksi myös koko asiakkuuden vaikutukset: yhden vakuutuslajin toimenpide
+          voi heijastua asiakkaan muihin vakuutuksiin.
+        </p>
+        <div class="portfolio-reminder">
+          <div class="portfolio-reminder-title">Muista aina, mitä portfolioa simuloit</div>
+          <div class="portfolio-reminder-value" id="introPortfolioReminder">Yritys × Ajoneuvot</div>
+          <div class="small">Kaikki toimenpiteet, strategiat ja 10 vuoden tulokset tulkitaan tämän valitun portfolio-solun kautta.</div>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn" onclick="goToPage('portfolio')">Aloita portfoliosta</button>
+          <button class="btn secondary" onclick="openGuide()">Avaa laajempi käyttöohje</button>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-side-box">
+          <div class="small"><b>Ohjelman päätarkoitus</b></div>
+          <ul class="small" style="margin:10px 0 0 18px;line-height:1.6">
+            <li>vertailla vaihtoehtoisia strategioita</li>
+            <li>nähdä pitkän aikavälin seuraukset</li>
+            <li>hahmottaa riippuvuudet ja ristiinvaikutukset</li>
+            <li>tukea johtoryhmän päätöksentekoa</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card info-step">
+      <div class="step-num">1</div>
+      <h3>Valitse lähtötilanne</h3>
+      <p>Määritä ensin simuloitava portfolio: asiakassegmentti × vakuutuslaji sekä lähtöarvot.</p>
+    </div>
+    <div class="card info-step">
+      <div class="step-num">2</div>
+      <h3>Muokkaa toimenpiteitä</h3>
+      <p>Arvioi toimenpiteiden vaikutukset hintaan, kasvuun, riskiin, kuluihin, CX:ään ja koko asiakkuuteen.</p>
+    </div>
+    <div class="card info-step">
+      <div class="step-num">3</div>
+      <h3>Vertaa strategioita</h3>
+      <p>Katso strategioiden yhteisvaikutukset, 10 vuoden kehitysurat ja lopuksi johdon yhteenveto.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Miten demoa käytetään?</h3>
+    <div class="quick-guide">
+      <div class="quick-item"><span>2.</span><div><b>Portfolio</b><br><small>Valitse simuloitava asiakassegmentti × vakuutuslaji ja muokkaa sen lähtöarvoja.</small></div></div>
+      <div class="quick-item"><span>3.</span><div><b>Toimenpiteet</b><br><small>Muuta toimenpiteitä ja niiden vaikutusoletuksia. Tämä on varsinainen käyttäjän syöttösivu.</small></div></div>
+      <div class="quick-item"><span>4.</span><div><b>Strategiat</b><br><small>Tarkista, millainen yhteisvaikutus Kasvu-, Kannattavuus- ja Tasapaino-strategioille syntyy.</small></div></div>
+      <div class="quick-item"><span>5.</span><div><b>10v simulointi</b><br><small>Vertaa kehitystä vuosille 2027–2036.</small></div></div>
+      <div class="quick-item"><span>6.</span><div><b>Vaikutuslogiikka</b><br><small>Tarkastele, miten syötetyt vaikutukset johtavat lopputuloksiin.</small></div></div>
+      <div class="quick-item"><span>7.</span><div><b>Yhteenveto</b><br><small>Katso lopuksi johdon päätöksentekoa varten tiivistetty vertailu.</small></div></div>
+    </div>
+    <div class="note" style="margin-top:14px"><b>Kaikki laskenta päivittyy automaattisesti.</b> Erillistä “Laske uudelleen” -toimintoa ei tarvita.</div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Mitä ohjelma tekee?</h3>
+    <div class="calc-flow">
+      <div class="calc-box"><b>Lähtötila</b><br>asiakkaat, hinta, uusmyynti, pysyvyys, vahinkotiheys, keskivahinko, kulut, CX, riskiprofiili</div>
+      <div class="calc-arrow">→</div>
+      <div class="calc-box"><b>Toimenpiteet</b><br>hinta, myynti, riski, vahinkovaikutukset, kulut, CX, investointi, asiakkuusshokki</div>
+      <div class="calc-arrow">→</div>
+      <div class="calc-box"><b>Simulointi</b><br>strategioiden vaikutukset 10 vuoden aikajänteellä sekä ristiinvaikutukset koko asiakkuuteen</div>
+      <div class="calc-arrow">→</div>
+      <div class="calc-box"><b>Päätulokset</b><br>Tulos · Maksutulo · Asiakaskokemus</div>
+    </div>
+  </div>
+</section>
+
+<section id="portfolio" class="page">
+  <h2>Portfolion lähtötila <span class="role-tag input-role">SYÖTTÖ</span></h2>
+  <div class="small" style="margin-bottom:12px">Valitse simuloitava portfolio-solu ja muokkaa sen lähtöarvoja. Muutokset päivittyvät automaattisesti kaikkiin tulosnäkymiin.</div>
+
+  <div class="grid g2">
+    <div class="card portfolio-focus-card">
+      <div class="portfolio-focus-label">SIMULOITAVA PORTFOLIO</div>
+      <h3>1. Valitse simuloitava portfolio</h3>
+      <div class="grid g2">
+        <div>
+          <label class="small"><b>Asiakassegmentti</b></label>
+          <select id="portfolioSegment" onchange="portfolioSelectionChanged()"></select>
+        </div>
+        <div>
+          <label class="small"><b>Vakuutuslaji</b></label>
+          <select id="portfolioLine" onchange="portfolioSelectionChanged()"></select>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px">Valittu portfolio toimii simulaation laskentayksikkönä. Toimenpiteiden suorat vaikutukset kohdistuvat tähän soluun, ja asiakkuusshokki voi levittää vaikutuksen myös muihin vakuutuksiin.</div>
+    </div>
+
+    <div class="card">
+      <h3>2. Lähtöarvojen yhteenveto</h3>
+      <div id="selectedPortfolioKpis" class="grid g3"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>3. Muokkaa lähtöarvoja</h3>
+    <div class="portfolio-input-grid">
+      <div><label>Asiakkaat, kpl</label><input id="p_customers" type="number" step="100" onchange="updatePortfolioField('customers',this.value)"></div>
+      <div><label>Keskivakuutusmaksu €/v</label><input id="p_premium" type="number" step="10" onchange="updatePortfolioField('premium',this.value)"></div>
+      <div><label>Uusmyynti, kpl/v</label><input id="p_newbiz" type="number" step="100" onchange="updatePortfolioField('newbiz',this.value)"></div>
+      <div><label>Pysyvyys %</label><input id="p_ret" type="number" step="0.1" onchange="updatePortfolioFieldPct('ret',this.value)"></div>
+      <div><label>Vahinkotiheys %</label><input id="p_freq" type="number" step="0.1" onchange="updatePortfolioFieldPct('freq',this.value)"></div>
+      <div><label>Keskivahinko €</label><input id="p_sev" type="number" step="10" onchange="updatePortfolioField('sev',this.value)"></div>
+      <div><label>Muuttuva kulu €/asiakas</label><input id="p_vc" type="number" step="10" onchange="updatePortfolioField('vc',this.value)"></div>
+      <div><label>Kiinteät kulut M€/v</label><input id="p_fc" type="number" step="0.1" onchange="updatePortfolioField('fc',this.value)"></div>
+      <div><label>Hinta-arvo CX 0–100</label><input id="p_cxPrice" type="number" min="0" max="100" step="1" onchange="updatePortfolioField('cxPrice',this.value)"></div>
+      <div><label>Muu CX 0–100</label><input id="p_cxOther" type="number" min="0" max="100" step="1" onchange="updatePortfolioField('cxOther',this.value)"></div>
+      <div><label>Riskiprofiili 0–100</label><input id="p_risk" type="number" min="0" max="100" step="1" onchange="updatePortfolioField('risk',this.value)"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="flex"><h3>Portfolion kaikki lähtöarvot</h3><span class="small">Klikkaa riviä vaihtaaksesi simuloitavan portfolion.</span></div>
+    <div class="table-scroll"><div id="portfolioTable"></div></div>
+  </div>
+</section>
+<section id="actions" class="page">
+  <div class="flex"><div><h2>Toimenpiteet ja suorat vaikutukset <span class="role-tag input-role">SYÖTTÖ</span></h2><div class="small">Toimenpiteet on ryhmitelty strategioittain. Käyttäjä voi muuttaa vaikutusoletuksia, ottaa toimenpiteitä käyttöön tai pois ja siirtää niitä strategiasta toiseen. Muutokset päivittyvät automaattisesti kaikkiin tulosnäkymiin.</div></div><button class="btn secondary" onclick="addAction()">+ Lisää toimenpide</button></div>
+  <div class="card"><div class="table-scroll"><div id="actionsTable"></div></div></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Vaikutuskenttien merkitys</h3>
+      <table>
+        <tr><td><b>Hinta %</b></td><td>Muutos keskivakuutusmaksuun. Vaikuttaa suoraan maksutuloon ja välillisesti asiakaskokemukseen, pysyvyyteen ja uusmyyntiin.</td></tr>
+        <tr><td><b>Myynti %</b></td><td>Muutos uusmyyntipotentiaaliin. Positiivinen arvo kasvattaa uusien asiakkaiden määrää, negatiivinen pienentää sitä.</td></tr>
+        <tr><td><b>Riski pts</b></td><td>Muutos vakuutuskannan riskiprofiiliin. Positiivinen arvo tarkoittaa parempaa riskiprofiilia ja tyypillisesti pienempiä vahinkokustannuksia.</td></tr>
+        <tr><td><b>Freq %</b></td><td>Suora muutos vahinkotiheyteen eli siihen, kuinka usein vahinkoja syntyy.</td></tr>
+        <tr><td><b>Sev %</b></td><td>Suora muutos keskivahingon suuruuteen.</td></tr>
+        <tr><td><b>Kulut %</b></td><td>Muutos muuttuvaan liikekuluun per asiakas. Negatiivinen arvo tarkoittaa tehokkuushyötyä.</td></tr>
+        <tr><td><b>CX hinta</b></td><td>Vaikutus asiakkaan hinta-arvokokemukseen pisteinä.</td></tr>
+        <tr><td><b>CX muu</b></td><td>Vaikutus muuhun asiakaskokemukseen, kuten helppouteen, nopeuteen, palveluun ja korvauskokemukseen.</td></tr>
+        <tr><td><b>Invest. M€</b></td><td>Toimenpiteen kertaluonteinen investointikustannus. Vähentää tulosta toteutusvuonna.</td></tr>
+        <tr><td><b>Asiakkuusshokki</b></td><td>Vaikutus koko asiakkuuteen. Negatiivinen arvo kasvattaa riskiä, että asiakas siirtää myös muut vakuutuksensa pois; positiivinen arvo voi vahvistaa keskittämistä.</td></tr>
+      </table>
+    </div>
+    <div class="card"><h3>Miten vaikutukset etenevät mallissa?</h3>
+      <div class="note">
+        <b>Suorat vaikutukset</b> syötetään toimenpiteelle. Malli johtaa niistä välivaikutukset ja lopputulokset.
+      </div>
+      <p><b>Hinta</b> → maksutulo + asiakaskokemus → pysyvyys ja uusmyynti.</p>
+      <p><b>Riski / Freq / Sev</b> → vahinkokustannukset → tulos.</p>
+      <p><b>Kulut</b> → liikekulut → tulos.</p>
+      <p><b>CX</b> → pysyvyys + uusmyynti → asiakasmäärä → maksutulo.</p>
+      <p><b>Asiakkuusshokki</b> → muiden vakuutusten poistuma tai keskittäminen → koko asiakkuuden maksutulo ja tulos.</p>
+      <div class="note warn">Tarkoitus on arvioida ensisijaisesti primäärivaikutuksia. Malli laskee niiden kautta tuloksen, maksutulon ja asiakaskokemuksen.</div>
+    </div>
+  </div>
+</section>
+<section id="strategies" class="page">
+  <div class="context-strip">Simuloitava portfolio: <b class="context-portfolio-text">Yritys × Ajoneuvot</b></div>
+  <h2>Strategioiden rakentaminen <span class="role-tag output-role">TULOS</span></h2><div class="small" style="margin-bottom:12px">Näyttää, millaiseksi valittujen toimenpiteiden yhteisvaikutus muodostuu.</div>
+  <div class="grid g3" id="strategyCards"></div>
+</section>
+<section id="simulation" class="page">
+  <div class="context-strip">Simuloitava portfolio: <b class="context-portfolio-text">Yritys × Ajoneuvot</b></div>
+  <div class="flex"><div><h2>10 vuoden simulointi <span class="role-tag output-role">TULOS</span></h2><div class="small">BASE vs Kasvu vs Kannattavuus vs Tasapaino. Näkymä päivittyy automaattisesti sivun 3 muutoksista.</div></div>
+  <select id="metricSelect" style="max-width:260px" onchange="renderSimChart()">
+    <option value="premium">Maksutulo M€</option><option value="result">Tulos M€</option><option value="customers">Asiakkaat</option><option value="cx">Asiakaskokemus</option>
+  </select></div>
+  <div class="card"><canvas id="simChart"></canvas></div>
+  <div class="card" style="margin-top:14px"><div class="table-scroll"><div id="simTable"></div></div></div>
+</section>
+<section id="logic" class="page">
+  <div class="context-strip">Simuloitava portfolio: <b class="context-portfolio-text">Yritys × Ajoneuvot</b></div>
+  <h2>Vaikutuslogiikka <span class="role-tag explain-role">SELITYS</span></h2><div class="small" style="margin-bottom:12px">Kuvaa, miten syötetyt vaikutukset etenevät riippuvuuksien kautta päätuloksiin.</div>
+  <div class="flow">
+    <div class="box"><h3>Toimenpiteet</h3><div>Hinta<br>Myyntipanostus<br>Riskinvalinta<br>Automaatio<br>Palvelu<br>Riskienhallinta</div></div>
+    <div class="box mid"><h3>Riippuvuusverkko</h3>
+      <div><b>Hinta</b> → CX → pysyvyys → asiakasmäärä</div>
+      <div><b>Riski</b> → vahinkotiheys + keskivahinko</div>
+      <div><b>Tehokkuus</b> → kulut + palvelunopeus</div>
+      <div><b>Asiakkuusshokki</b> → koko vakuutuskorin poistuma/keskittäminen</div>
+    </div>
+    <div class="box"><h3>Kolme päätulosta</h3><div><span class="badge">TULOS</span><br><br><span class="badge">MAKSUTULO</span><br><br><span class="badge">ASIAKASKOKEMUS</span></div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Epälineaarinen yhdistäminen</h3><p>Prosenttivaikutukset kertautuvat. Riski- ja CX-vaikutukset kyllästyvät. Negatiiviset asiakkuusshokit voivat voimistua.</p></div>
+    <div class="card"><h3>Koko asiakkuuden arvo</h3><p>Toimenpidettä ei optimoida vain kohdevakuutuslajin näkökulmasta. Malli huomioi myös muiden vakuutusten menetettävän maksutulon ja tuloksen.</p></div>
+  </div>
+</section>
+<section id="overview" class="page">
+  <div class="context-strip">Simuloitava portfolio: <b class="context-portfolio-text">Yritys × Ajoneuvot</b></div>
+  <div class="flex"><div><h2>Johdon tilannekuva <span class="role-tag output-role">TULOS</span></h2><div class="small">Mitä tapahtuu, jos valitsemme erilaisia toimenpidekokonaisuuksia?</div></div></div>
+  <div class="grid g4" id="overviewKpis"></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Strategioiden 10 vuoden diskontattu tulos</h3><canvas id="barSummary"></canvas></div>
+    <div class="card"><h3>Kasvu × asiakaskokemus 2036</h3><canvas id="scatterSummary"></canvas></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Johtopäätös</h3>
+    <div id="decisionText" class="note"></div>
+  </div>
+</section></main>
+
+<script>
+const YEARS=[2026,2027,2028,2029,2030,2031,2032,2033,2034,2035,2036];
+
+const portfolio=[
+ {segment:'Yritys',line:'TyTa',customers:18000,premium:6500,newbiz:1800,ret:0.91,freq:.18,sev:4200,vc:620,fc:3.2,cxPrice:72,cxOther:75,risk:68},
+ {segment:'Yritys',line:'Ajoneuvot',customers:25000,premium:3600,newbiz:3000,ret:.90,freq:.22,sev:2400,vc:500,fc:4.0,cxPrice:72,cxOther:73,risk:65},
+ {segment:'Yritys',line:'Omaisuus',customers:16000,premium:6800,newbiz:1600,ret:.92,freq:.08,sev:8200,vc:650,fc:3.5,cxPrice:74,cxOther:76,risk:70},
+ {segment:'Yritys',line:'Vapaaehtoinen henkilö',customers:12000,premium:1500,newbiz:1400,ret:.93,freq:.12,sev:1900,vc:360,fc:1.8,cxPrice:76,cxOther:78,risk:72},
+ {segment:'Yritys',line:'Vastuu & oikeusturva',customers:14500,premium:2400,newbiz:1500,ret:.94,freq:.05,sev:6100,vc:410,fc:2.2,cxPrice:76,cxOther:77,risk:74},
+ {segment:'Henkilö',line:'Ajoneuvot',customers:180000,premium:780,newbiz:26000,ret:.91,freq:.20,sev:1800,vc:150,fc:10,cxPrice:71,cxOther:74,risk:67},
+ {segment:'Henkilö',line:'Omaisuus',customers:140000,premium:520,newbiz:18000,ret:.93,freq:.06,sev:3200,vc:125,fc:8,cxPrice:76,cxOther:78,risk:72},
+ {segment:'Henkilö',line:'Vapaaehtoinen henkilö',customers:90000,premium:460,newbiz:12000,ret:.94,freq:.10,sev:950,vc:140,fc:5,cxPrice:78,cxOther:79,risk:74},
+ {segment:'Henkilö',line:'Vastuu & oikeusturva',customers:110000,premium:120,newbiz:15000,ret:.95,freq:.03,sev:1200,vc:70,fc:2.8,cxPrice:79,cxOther:80,risk:76}
+];
+
+let selectedPortfolioIndex=1;
+
+let actions=[
+ {name:'Myyntipanostus yritysajoneuvoihin',strategy:'Kasvu',price:0,sales:.12,risk:-2,freq:.01,sev:0,cost:.03,cxPrice:2,cxOther:3,investment:1.0,shock:10,on:true},
+ {name:'Maltillinen hinnanalennus',strategy:'Kasvu',price:-.03,sales:.06,risk:-1,freq:0,sev:0,cost:0,cxPrice:5,cxOther:2,investment:.2,shock:8,on:true},
+ {name:'Palvelun sujuvoittaminen',strategy:'Kasvu',price:0,sales:.03,risk:0,freq:0,sev:0,cost:-.05,cxPrice:0,cxOther:6,investment:.8,shock:12,on:true},
+ {name:'Hinnankorotus',strategy:'Kannattavuus',price:.07,sales:-.05,risk:4,freq:0,sev:0,cost:0,cxPrice:-12,cxOther:0,investment:.1,shock:-35,on:true},
+ {name:'Riskinvalinnan kiristäminen',strategy:'Kannattavuus',price:0,sales:-.10,risk:10,freq:-.03,sev:-.02,cost:.04,cxPrice:-2,cxOther:-3,investment:.4,shock:-20,on:true},
+ {name:'Korvausprosessin automaatio',strategy:'Kannattavuus',price:0,sales:.02,risk:0,freq:-.01,sev:-.01,cost:-.15,cxPrice:0,cxOther:8,investment:2,shock:15,on:true},
+ {name:'Maltillinen hinnankorotus',strategy:'Tasapaino',price:.03,sales:-.02,risk:2,freq:0,sev:0,cost:0,cxPrice:-5,cxOther:0,investment:.1,shock:-10,on:true},
+ {name:'Korvausprosessin automaatio',strategy:'Tasapaino',price:0,sales:.02,risk:0,freq:-.01,sev:-.01,cost:-.12,cxPrice:0,cxOther:8,investment:1.5,shock:12,on:true},
+ {name:'Myyntipanostus valittuihin asiakkaisiin',strategy:'Tasapaino',price:0,sales:.05,risk:1,freq:0,sev:0,cost:.01,cxPrice:1,cxOther:2,investment:.6,shock:5,on:true}
+];
+
+const params={riskCap:20,cxCap:20,shockCap:80,negShockAmp:1.2,posShockAmp:.9,cxAmp:1.1,riskAmp:1.05,cxRet:.001,cxSales:.005,riskFreq:.005,riskSev:.002,crossPremium:9980,crossValue:7503.71,crossSensitivity:.75,disc:.05};
+
+function sat(x,cap,amp){return Math.sign(x)*cap*(1-Math.exp(-Math.abs(x)*amp/cap))}
+function combinePercent(vals){return vals.reduce((p,x)=>p*(1+x),1)-1}
+function strategyEffects(name){
+ const a=actions.filter(x=>x.on&&x.strategy===name);
+ const rawRisk=a.reduce((s,x)=>s+x.risk,0);
+ const rawCx=a.reduce((s,x)=>s+.35*x.cxPrice+.65*x.cxOther,0);
+ const rawShock=a.reduce((s,x)=>s+x.shock,0);
+ return {
+  price:combinePercent(a.map(x=>x.price)), sales:combinePercent(a.map(x=>x.sales)),
+  risk:sat(rawRisk,params.riskCap,params.riskAmp), freq:combinePercent(a.map(x=>x.freq)),
+  sev:combinePercent(a.map(x=>x.sev)), cost:combinePercent(a.map(x=>x.cost)),
+  cx:sat(rawCx,params.cxCap,params.cxAmp), investment:a.reduce((s,x)=>s+x.investment,0),
+  shock:Math.max(-params.shockCap,Math.min(params.shockCap,rawShock*(rawShock<0?params.negShockAmp:params.posShockAmp))),
+  rawRisk,rawCx,rawShock
+ }
+}
+function simulate(name){
+ const b=portfolio[selectedPortfolioIndex];
+ const fx=name==='BASE'?{price:0,sales:0,risk:0,freq:0,sev:0,cost:0,cx:0,investment:0,shock:0}:strategyEffects(name);
+ let out=[], customers=b.customers;
+ const baseCx=.35*b.cxPrice+.65*b.cxOther;
+ for(let yi=0;yi<YEARS.length;yi++){
+  if(yi===0){
+    const premium=customers*b.premium/1e6;
+    const claims=customers*b.freq*b.sev/1e6;
+    const expenses=customers*b.vc/1e6+b.fc;
+    out.push({year:YEARS[yi],customers,premium,result:premium-claims-expenses,cx:baseCx});
+    continue;
+  }
+  const cx=baseCx+fx.cx;
+  const retention=Math.min(.999,Math.max(0,b.ret+params.cxRet*(cx-baseCx)-(fx.shock<0?Math.abs(fx.shock)/100*(1-b.ret)*params.crossSensitivity:0)));
+  const newbiz=b.newbiz*(1+fx.sales)*(1+params.cxSales*(cx-baseCx));
+  const prevCustomers=customers;
+  customers=customers*retention+newbiz;
+  const avgPremium=b.premium*(1+fx.price);
+  const freq=b.freq*(1+fx.freq)*(1-params.riskFreq*fx.risk);
+  const sev=b.sev*(1+fx.sev)*(1-params.riskSev*fx.risk);
+  let premium=customers*avgPremium/1e6;
+  let result=premium-customers*freq*sev/1e6-(customers*b.vc*(1+fx.cost)/1e6+b.fc)-(yi===1?fx.investment:0);
+  if(fx.shock<0){
+    const exits=prevCustomers*Math.abs(fx.shock)/100*(1-b.ret)*params.crossSensitivity;
+    premium-=exits*params.crossPremium/1e6;
+    result-=exits*params.crossValue/1e6;
+  } else if(fx.shock>0){
+    const adds=prevCustomers*fx.shock/100*params.crossSensitivity*.25;
+    premium+=adds*params.crossPremium/1e6;
+    result+=adds*params.crossValue/1e6;
+  }
+  out.push({year:YEARS[yi],customers,premium,result,cx});
+ }
+ let disc=0; out.forEach((x,i)=>disc+=x.result/Math.pow(1+params.disc,i));
+ return {name,fx,series:out,disc};
+}
+let sims={};
+function recalcAll(){
+ sims={BASE:simulate('BASE'),Kasvu:simulate('Kasvu'),Kannattavuus:simulate('Kannattavuus'),Tasapaino:simulate('Tasapaino')};
+ renderAll();
+}
+function fmt(n,d=1){return Number(n).toLocaleString('fi-FI',{maximumFractionDigits:d,minimumFractionDigits:d})}
+function renderOverview(){
+ const base=sims.BASE; const names=['Kasvu','Kannattavuus','Tasapaino'];
+ const best=names.map(n=>sims[n]).sort((a,b)=>b.disc-a.disc)[0];
+ const end=best.series.at(-1), baseEnd=base.series.at(-1);
+ document.getElementById('overviewKpis').innerHTML=`
+  <div class="card kpi"><div class="s">Paras strategia</div><div class="v">${best.name}</div><div class="s">10v disk. tulos ${fmt(best.disc)} M€</div></div>
+  <div class="card kpi"><div class="s">Δ disk. tulos vs BASE</div><div class="v ${best.disc-base.disc>=0?'good':'bad'}">${fmt(best.disc-base.disc)} M€</div><div class="s">10 vuotta</div></div>
+  <div class="card kpi"><div class="s">Maksutulo 2036</div><div class="v">${fmt(end.premium)} M€</div><div class="s">BASE ${fmt(baseEnd.premium)} M€</div></div>
+  <div class="card kpi"><div class="s">Asiakaskokemus 2036</div><div class="v">${fmt(end.cx)}</div><div class="s">BASE ${fmt(baseEnd.cx)}</div></div>`;
+ document.getElementById('decisionText').innerHTML=`Nykyisillä demo-oletuksilla <b>${best.name}</b> tuottaa vahvimman 10 vuoden kokonaisuuden. Mallin tarkoitus ei ole antaa yhtä “oikeaa” ennustetta, vaan tehdä näkyväksi, miten hinta-, kasvu-, riski-, kustannus- ja asiakkuusvaikutukset kytkeytyvät toisiinsa. Muuta toimenpiteitä ja vertaa, milloin johtopäätös vaihtuu.`;
+ drawBar('barSummary', ['BASE','Kasvu','Kannattavuus','Tasapaino'], [sims.BASE.disc,sims.Kasvu.disc,sims.Kannattavuus.disc,sims.Tasapaino.disc], 'M€');
+ drawScatter('scatterSummary', ['BASE','Kasvu','Kannattavuus','Tasapaino'].map(n=>({name:n,x:sims[n].series.at(-1).premium,y:sims[n].series.at(-1).cx})));
+}
+function renderPortfolio(){
+ const segSel=document.getElementById('portfolioSegment');
+ const lineSel=document.getElementById('portfolioLine');
+ if(segSel && lineSel){
+   const segments=[...new Set(portfolio.map(x=>x.segment))];
+   const current=portfolio[selectedPortfolioIndex];
+   segSel.innerHTML=segments.map(s=>`<option ${s===current.segment?'selected':''}>${s}</option>`).join('');
+   const lines=[...new Set(portfolio.filter(x=>x.segment===current.segment).map(x=>x.line))];
+   lineSel.innerHTML=lines.map(l=>`<option ${l===current.line?'selected':''}>${l}</option>`).join('');
+ }
+ const x=portfolio[selectedPortfolioIndex];
+ const fields={
+  p_customers:x.customers,p_premium:x.premium,p_newbiz:x.newbiz,p_ret:x.ret*100,p_freq:x.freq*100,
+  p_sev:x.sev,p_vc:x.vc,p_fc:x.fc,p_cxPrice:x.cxPrice,p_cxOther:x.cxOther,p_risk:x.risk
+ };
+ Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=Number(val).toFixed(['p_ret','p_freq','p_fc'].includes(id)?1:0)});
+ const cx=.35*x.cxPrice+.65*x.cxOther;
+ const premium=x.customers*x.premium/1e6;
+ const claims=x.customers*x.freq*x.sev/1e6;
+ const expenses=x.customers*x.vc/1e6+x.fc;
+ const result=premium-claims-expenses;
+ const k=document.getElementById('selectedPortfolioKpis');
+ if(k) k.innerHTML=`
+  <div class="kpi"><div class="s">Maksutulo</div><div class="v">${fmt(premium)} M€</div></div>
+  <div class="kpi"><div class="s">Tekninen tulos</div><div class="v">${fmt(result)} M€</div></div>
+  <div class="kpi"><div class="s">Asiakaskokemus</div><div class="v">${fmt(cx)}</div></div>`;
+ const badge=document.getElementById('headerPortfolioBadge');
+ if(badge)badge.textContent=`Simuloitava: ${x.segment} × ${x.line}`;
+ const introReminder=document.getElementById('introPortfolioReminder');
+ if(introReminder)introReminder.textContent=`${x.segment} × ${x.line}`;
+ document.querySelectorAll('.context-portfolio-text').forEach(el=>el.textContent=`${x.segment} × ${x.line}`);
+ let h='<table><thead><tr><th>Segmentti</th><th>Vakuutuslaji</th><th>Asiakkaat</th><th>Keskimaksu €</th><th>Uusmyynti</th><th>Pysyvyys</th><th>Vahinkotiheys</th><th>Keskivahinko €</th><th>Riskiprofiili</th></tr></thead><tbody>';
+ portfolio.forEach((p,i)=>h+=`<tr class="selectable ${i===selectedPortfolioIndex?'selected-row':''}" onclick="selectPortfolioRow(${i})"><td>${p.segment}</td><td>${p.line}</td><td>${fmt(p.customers,0)}</td><td>${fmt(p.premium,0)}</td><td>${fmt(p.newbiz,0)}</td><td>${fmt(p.ret*100)} %</td><td>${fmt(p.freq*100)} %</td><td>${fmt(p.sev,0)}</td><td>${fmt(p.risk,0)}</td></tr>`);
+ h+='</tbody></table>';
+ const t=document.getElementById('portfolioTable');if(t)t.innerHTML=h;
+}
+
+function portfolioSelectionChanged(){
+ const seg=document.getElementById('portfolioSegment').value;
+ const line=document.getElementById('portfolioLine').value;
+ let idx=portfolio.findIndex(x=>x.segment===seg&&x.line===line);
+ if(idx<0){
+   idx=portfolio.findIndex(x=>x.segment===seg);
+   if(idx>=0) selectedPortfolioIndex=idx;
+   renderPortfolio();
+   recalcAll();
+   return;
+ }
+ selectedPortfolioIndex=idx;
+ renderPortfolio();
+ recalcAll();
+}
+function selectPortfolioRow(i){selectedPortfolioIndex=i;renderPortfolio();recalcAll()}
+function updatePortfolioField(field,value){
+ const n=Number(value);
+ if(!Number.isFinite(n))return;
+ portfolio[selectedPortfolioIndex][field]=n;
+ recalcAll();
+}
+function updatePortfolioFieldPct(field,value){
+ const n=Number(value);
+ if(!Number.isFinite(n))return;
+ portfolio[selectedPortfolioIndex][field]=n/100;
+ recalcAll();
+}
+
+function renderActions(){
+ const strategies=['Kasvu','Kannattavuus','Tasapaino'];
+ const wrap=document.getElementById('actionsTable');
+ if(!wrap)return;
+ let out='';
+ strategies.forEach(strategy=>{
+   const rows=actions.map((a,i)=>({a,i})).filter(x=>x.a.strategy===strategy);
+   out+=`<div class="action-group">
+     <div class="action-group-head">
+       <div>
+         <h3>${strategy}</h3>
+         <div class="small">${rows.filter(x=>x.a.on).length} aktiivista / ${rows.length} toimenpidettä</div>
+       </div>
+       <span class="strategy-badge ${strategy.toLowerCase()}">${strategy}</span>
+     </div>
+     <div class="table-scroll">
+       <table class="actions-group-table">
+         <thead><tr>
+           <th>Käytössä</th><th>Toimenpide</th><th>Hinta %</th><th>Myynti %</th><th>Riski pts</th>
+           <th>Freq %</th><th>Sev %</th><th>Kulut %</th><th>CX hinta</th><th>CX muu</th><th>Invest. M€</th><th>Asiakkuusshokki</th><th>Siirrä strategiaan</th>
+         </tr></thead><tbody>`;
+   rows.forEach(({a,i})=>{
+     out+=`<tr>
+       <td><input type="checkbox" ${a.on?'checked':''} onchange="setA(${i},'on',this.checked)"></td>
+       <td><input value="${a.name}" onchange="setA(${i},'name',this.value)"></td>
+       ${['price','sales','risk','freq','sev','cost','cxPrice','cxOther','investment','shock'].map(k=>`<td><input type="number" step="${['price','sales','freq','sev','cost'].includes(k)?'.01':'1'}" value="${['price','sales','freq','sev','cost'].includes(k)?a[k]*100:a[k]}" onchange="setNum(${i},'${k}',this.value)"></td>`).join('')}
+       <td><select onchange="setA(${i},'strategy',this.value);renderActions()">${strategies.map(s=>`<option ${a.strategy===s?'selected':''}>${s}</option>`).join('')}</select></td>
+     </tr>`;
+   });
+   out+=`</tbody></table></div></div>`;
+ });
+ wrap.innerHTML=out;
+}
+function setA(i,k,v){actions[i][k]=v;recalcAll()}
+function setNum(i,k,v){let n=Number(v);if(['price','sales','freq','sev','cost'].includes(k))n/=100;actions[i][k]=n;recalcAll()}
+function addAction(){actions.push({name:'Uusi toimenpide',strategy:'Tasapaino',price:0,sales:0,risk:0,freq:0,sev:0,cost:0,cxPrice:0,cxOther:0,investment:0,shock:0,on:true});renderActions();recalcAll()}
+function renderStrategies(){
+ const names=['Kasvu','Kannattavuus','Tasapaino']; const best=names.map(n=>sims[n]).sort((a,b)=>b.disc-a.disc)[0].name;
+ document.getElementById('strategyCards').innerHTML=names.map(n=>{const x=sims[n],fx=x.fx,end=x.series.at(-1);return `<div class="card strategy-card ${n===best?'best':''}">
+ <div class="flex"><h3>${n}</h3>${n===best?'<span class="pill">Paras demo-oletuksilla</span>':''}</div>
+ <div class="small">${actions.filter(a=>a.on&&a.strategy===n).length} valittua toimenpidettä</div><hr style="border:0;border-top:1px solid #e8edf3">
+ <table><tr><td>Hinta</td><td>${fmt(fx.price*100)} %</td></tr><tr><td>Myynti</td><td>${fmt(fx.sales*100)} %</td></tr><tr><td>Riskiprofiili</td><td>${fmt(fx.risk)} pts</td></tr><tr><td>CX</td><td>${fmt(fx.cx)} pts</td></tr><tr><td>Asiakkuusshokki</td><td>${fmt(fx.shock)}</td></tr><tr><td>Investointi</td><td>${fmt(fx.investment)} M€</td></tr></table>
+ <hr style="border:0;border-top:1px solid #e8edf3"><div class="small">2036</div><div><b>Maksutulo ${fmt(end.premium)} M€</b> · Tulos ${fmt(end.result)} M€ · CX ${fmt(end.cx)}</div><div class="small" style="margin-top:5px">10v disk. tulos ${fmt(x.disc)} M€</div></div>`}).join('');
+}
+function renderSimTable(){
+ const names=['BASE','Kasvu','Kannattavuus','Tasapaino'];let h='<table><thead><tr><th>Strategia</th><th>2036 maksutulo</th><th>2036 tulos</th><th>2036 asiakkaat</th><th>2036 CX</th><th>10v disk. tulos</th><th>Δ vs BASE</th></tr></thead><tbody>';
+ names.forEach(n=>{const s=sims[n],e=s.series.at(-1),delta=s.disc-sims.BASE.disc;h+=`<tr><td>${n}</td><td>${fmt(e.premium)} M€</td><td>${fmt(e.result)} M€</td><td>${fmt(e.customers,0)}</td><td>${fmt(e.cx)}</td><td>${fmt(s.disc)} M€</td><td class="${delta>=0?'good':'bad'}">${fmt(delta)} M€</td></tr>`});
+ h+='</tbody></table>';document.getElementById('simTable').innerHTML=h;
+}
+function renderSimChart(){
+ const metric=document.getElementById('metricSelect').value; const names=['BASE','Kasvu','Kannattavuus','Tasapaino'];
+ drawLines('simChart',YEARS,names.map(n=>({name:n,vals:sims[n].series.map(x=>x[metric])})),metric==='customers'?'asiakasta':metric==='cx'?'CX':'M€');
+}
+function renderAll(){renderOverview();renderPortfolio();renderActions();renderStrategies();renderSimTable();renderSimChart()}
+function canvasSetup(id){
+ const c=document.getElementById(id),r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;const ctx=c.getContext('2d');ctx.scale(dpr,dpr);return {c,ctx,w:r.width,h:r.height}
+}
+const colors=['#17365d','#2f855a','#c53030','#b7791f','#4472c4'];
+function drawBar(id,labels,vals,unit){
+ const {ctx,w,h}=canvasSetup(id),p={l:55,r:20,t:25,b:45},max=Math.max(...vals)*1.12,min=Math.min(0,...vals);
+ ctx.clearRect(0,0,w,h);ctx.font='12px Segoe UI';ctx.fillStyle='#667085';
+ const zeroY=p.t+(max/(max-min))*(h-p.t-p.b);ctx.strokeStyle='#d9e1ec';ctx.beginPath();ctx.moveTo(p.l,zeroY);ctx.lineTo(w-p.r,zeroY);ctx.stroke();
+ const bw=(w-p.l-p.r)/labels.length*.58;
+ labels.forEach((lab,i)=>{const x=p.l+(i+.5)*(w-p.l-p.r)/labels.length;const y=p.t+(max-vals[i])/(max-min)*(h-p.t-p.b);ctx.fillStyle=colors[i];ctx.fillRect(x-bw/2,Math.min(y,zeroY),bw,Math.abs(zeroY-y));ctx.fillStyle='#172033';ctx.textAlign='center';ctx.fillText(lab,x,h-18);ctx.fillText(fmt(vals[i]),x,y-7)});
+}
+function drawScatter(id,pts){
+ const {ctx,w,h}=canvasSetup(id),p={l:55,r:25,t:25,b:45};const xs=pts.map(x=>x.x),ys=pts.map(x=>x.y);let xmin=Math.min(...xs)*.95,xmax=Math.max(...xs)*1.05,ymin=Math.min(...ys)-3,ymax=Math.max(...ys)+3;
+ ctx.clearRect(0,0,w,h);ctx.strokeStyle='#d9e1ec';ctx.strokeRect(p.l,p.t,w-p.l-p.r,h-p.t-p.b);ctx.font='12px Segoe UI';
+ pts.forEach((pt,i)=>{let x=p.l+(pt.x-xmin)/(xmax-xmin)*(w-p.l-p.r),y=p.t+(ymax-pt.y)/(ymax-ymin)*(h-p.t-p.b);ctx.fillStyle=colors[i];ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#172033';ctx.fillText(pt.name,x+10,y-8)});
+ ctx.fillStyle='#667085';ctx.fillText('Maksutulo 2036 →',w-130,h-12);ctx.save();ctx.translate(15,130);ctx.rotate(-Math.PI/2);ctx.fillText('Asiakaskokemus →',0,0);ctx.restore();
+}
+function drawLines(id,years,series,unit){
+ const {ctx,w,h}=canvasSetup(id),p={l:60,r:20,t:25,b:45};const all=series.flatMap(s=>s.vals);let ymin=Math.min(...all),ymax=Math.max(...all);const pad=(ymax-ymin||1)*.1;ymin-=pad;ymax+=pad;
+ ctx.clearRect(0,0,w,h);ctx.font='11px Segoe UI';ctx.strokeStyle='#e1e7ef';
+ for(let g=0;g<=4;g++){let y=p.t+g*(h-p.t-p.b)/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(w-p.r,y);ctx.stroke();ctx.fillStyle='#667085';ctx.fillText(fmt(ymax-g*(ymax-ymin)/4),4,y+4)}
+ years.forEach((yr,i)=>{let x=p.l+i*(w-p.l-p.r)/(years.length-1);ctx.fillStyle='#667085';ctx.fillText(yr,x-13,h-16)});
+ series.forEach((s,si)=>{ctx.strokeStyle=colors[si];ctx.lineWidth=2.5;ctx.beginPath();s.vals.forEach((v,i)=>{let x=p.l+i*(w-p.l-p.r)/(years.length-1),y=p.t+(ymax-v)/(ymax-ymin)*(h-p.t-p.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle=colors[si];ctx.fillRect(w-125,p.t+si*20,12,3);ctx.fillStyle='#172033';ctx.fillText(s.name,w-108,p.t+4+si*20)});
+}
+
+function goToPage(pageId){
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  const btn=document.querySelector(`nav button[data-page="${pageId}"]`);
+  if(btn) btn.classList.add('active');
+  const page=document.getElementById(pageId);
+  if(page) page.classList.add('active');
+  if(pageId==='overview') setTimeout(()=>renderOverview(),50);
+  if(pageId==='simulation') setTimeout(()=>renderSimChart(),50);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.page).classList.add('active');setTimeout(()=>{if(b.dataset.page==='overview')renderOverview();if(b.dataset.page==='simulation')renderSimChart()},50)});
+window.addEventListener('resize',()=>{renderOverview();renderSimChart()});
+recalcAll();
+</script>
+
+<button id="guideBtn" class="guide-btn" onclick="openGuide()">Käyttöohje</button>
+
+<div id="guideOverlay" class="guide-overlay" onclick="if(event.target===this)closeGuide()">
+  <div class="guide-panel">
+    <div class="guide-head">
+      <div>
+        <h2 style="margin:0">Käyttöohje ja laskennan periaate</h2>
+        <div class="small">Vakuutusportfolion strategiasimulaattori – Demo 1</div>
+      </div>
+      <button class="guide-close" onclick="closeGuide()">×</button>
+    </div>
+
+    <div class="guide-section">
+      <h3>Miten demoa käytetään?</h3>
+      <ol>
+        <li><b>Sivu 1 – Aloitus:</b> tutustu ohjelman tarkoitukseen ja etenemisjärjestykseen.</li><li><b>Sivu 2 – Portfolio:</b> valitse simuloitava asiakassegmentti × vakuutuslaji ja muokkaa sen lähtöarvoja.</li>
+        <li><b>Sivu 3 – Toimenpiteet:</b> muuta toimenpiteitä ja niiden vaikutusoletuksia. Tämä on varsinainen käyttäjän syöttösivu.</li>
+        <li><b>Sivu 4 – Strategiat:</b> tarkista, millainen yhteisvaikutus Kasvu-, Kannattavuus- ja Tasapaino-strategioille syntyy.</li>
+        <li><b>Sivu 5 – 10v simulointi:</b> vertaa kehitystä vuosille 2027–2036.</li>
+        <li><b>Sivu 6 – Vaikutuslogiikka:</b> tarkastele, miten syötetyt vaikutukset johtavat lopputuloksiin.</li><li><b>Sivu 7 – Yhteenveto:</b> katso lopuksi johdon päätöksentekoa varten tiivistetty vertailu.</li>
+      </ol>
+      <div class="note"><b>Kaikki laskenta päivittyy automaattisesti.</b> Erillistä “Laske uudelleen” -toimintoa ei tarvita.</div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Ylätason laskentalogiikka</h3>
+      <div class="calc-flow">
+        <div class="calc-box"><b>1. Lähtötila</b><br>asiakkaat, hinta, uusmyynti, pysyvyys, vahinkotiheys, keskivahinko, kulut, CX, riskiprofiili</div>
+        <div class="calc-arrow">→</div>
+        <div class="calc-box"><b>2. Toimenpiteet</b><br>hinta, myynti, riski, vahinkovaikutukset, kulut, CX, investointi, asiakkuusshokki</div>
+        <div class="calc-arrow">→</div>
+        <div class="calc-box"><b>3. Riippuvuudet</b><br>CX → pysyvyys ja uusmyynti<br>Riski → vahinkokustannus<br>Asiakkuusshokki → muut vakuutukset</div>
+        <div class="calc-arrow">→</div>
+        <div class="calc-box"><b>4. Päätulokset</b><br>Tulos<br>Maksutulo<br>Asiakaskokemus</div>
+      </div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Miten toimenpiteet vaikuttavat?</h3>
+      <table>
+        <tr><td><b>Hinta</b></td><td>Vaikuttaa suoraan keskivakuutusmaksuun sekä välillisesti CX:ään, pysyvyyteen ja uusmyyntiin.</td></tr>
+        <tr><td><b>Myynti</b></td><td>Muuttaa uusmyynnin tasoa ja siten asiakasmäärää sekä maksutuloa.</td></tr>
+        <tr><td><b>Riski</b></td><td>Muuttaa riskiprofiilia, joka vaikuttaa vahinkotiheyteen ja keskivahinkoon.</td></tr>
+        <tr><td><b>Freq / Sev</b></td><td>Vaikuttavat suoraan vahinkokustannukseen ja tulokseen.</td></tr>
+        <tr><td><b>Kulut</b></td><td>Vaikuttavat liikekuluihin ja tulokseen.</td></tr>
+        <tr><td><b>CX</b></td><td>Vaikuttaa asiakaspysyvyyteen ja uusmyyntiin, joten sillä on myös taloudellinen vaikutus.</td></tr>
+        <tr><td><b>Asiakkuusshokki</b></td><td>Voi siirtää myös asiakkaan muut vakuutukset pois tai vahvistaa keskittämistä.</td></tr>
+      </table>
+    </div>
+
+    <div class="guide-section">
+      <h3>Mitä demo yrittää osoittaa?</h3>
+      <p>Yksittäisen vakuutuslajin kannalta järkevä toimenpide ei välttämättä ole koko vakuutusportfolion tai asiakkuuden kannalta paras. Demo tekee näkyväksi eri toimenpiteiden pitkän aikavälin riippuvuudet ja vaihtoehtoiskustannukset.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function openGuide(){document.getElementById('guideOverlay').classList.add('open')}
+function closeGuide(){document.getElementById('guideOverlay').classList.remove('open')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGuide()});
+</script>
+
+</body>
+</html>
+<style>
+#actions .card table td:nth-child(1), #actions .card table td:nth-child(2){white-space:normal}
+#actions .grid .card table{min-width:0}
+#actions .grid .card td{white-space:normal;text-align:left;vertical-align:top}
+#portfolioTable table, #simTable table{min-width:980px}
+</style>
